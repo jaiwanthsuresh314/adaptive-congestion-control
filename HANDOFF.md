@@ -54,4 +54,4 @@ Observed localhost results are in `results/loopback-benchmark.csv`. With 100 pac
 
 ## Git state
 
-The project directory originally had no `.git` directory or configured remote. A local repository has now been initialized and all project files are staged, but the first commit is blocked because Git author identity is not configured. No remote is configured, so pushing also requires the user’s repository URL. Do not invent either the author identity or remote.
+Git is configured with the user-provided identity and `origin` points to `https://github.com/jaiwanthsuresh314/adaptive-congestion-control.git`. The completed milestone was committed as `9daa90f` and pushed to the `main` branch. Future sessions should continue from `main` and update this handoff file only for progress tracking.
