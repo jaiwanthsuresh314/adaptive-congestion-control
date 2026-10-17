@@ -1,0 +1,2 @@
+scenario,packets,payload_bytes,window,acknowledged,transmissions,retransmissions,retransmission_rate,elapsed_ms,goodput_bytes_per_sec,average_rtt_ms,rtt_variation_ms
+localhost-aimd,100,256,14,100,100,0,0.000000,16.855,1518810.107,0.858,0.371

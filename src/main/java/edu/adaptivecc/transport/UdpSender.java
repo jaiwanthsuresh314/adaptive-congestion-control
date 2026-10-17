@@ -3,6 +3,8 @@ package edu.adaptivecc.transport;
 import edu.adaptivecc.protocol.MessageType;
 import edu.adaptivecc.protocol.ProtocolPacket;
 import edu.adaptivecc.metrics.TransferMetrics;
+import edu.adaptivecc.congestion.CongestionController;
+import edu.adaptivecc.congestion.FixedRateController;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -20,19 +22,23 @@ public final class UdpSender {
     private final InetSocketAddress destination;
     private final int acknowledgementTimeoutMillis;
     private final int maxAttempts;
-    private final int windowSize;
+    private final CongestionController controller;
 
     public UdpSender(InetSocketAddress destination, int acknowledgementTimeoutMillis, int maxAttempts) {
         this(destination, acknowledgementTimeoutMillis, maxAttempts, 1);
     }
 
     public UdpSender(InetSocketAddress destination, int acknowledgementTimeoutMillis, int maxAttempts, int windowSize) {
+        this(destination, acknowledgementTimeoutMillis, maxAttempts, new FixedRateController(windowSize, Long.MAX_VALUE));
+    }
+
+    public UdpSender(InetSocketAddress destination, int acknowledgementTimeoutMillis, int maxAttempts, CongestionController controller) {
         if (acknowledgementTimeoutMillis <= 0 || maxAttempts <= 0) throw new IllegalArgumentException("timeouts and attempts must be positive");
-        if (windowSize <= 0) throw new IllegalArgumentException("window size must be positive");
+        if (controller == null) throw new IllegalArgumentException("controller is required");
         this.destination = destination;
         this.acknowledgementTimeoutMillis = acknowledgementTimeoutMillis;
         this.maxAttempts = maxAttempts;
-        this.windowSize = windowSize;
+        this.controller = controller;
     }
 
     public int send(byte[][] payloads) throws IOException {
@@ -67,7 +73,7 @@ public final class UdpSender {
         int nextSequence = 0;
 
         while (acknowledged.size() < payloads.length) {
-            while (nextSequence < payloads.length && packets.size() < windowSize) {
+            while (nextSequence < payloads.length && packets.size() < controller.congestionWindow()) {
                 ProtocolPacket packet = ProtocolPacket.data(nextSequence, System.nanoTime(), payloads[nextSequence]);
                 packets.put(nextSequence, packet);
                 transmit(socket, packet, attempts, deadlines, firstSendNanos, transmissions);
@@ -82,10 +88,13 @@ public final class UdpSender {
                 if (responsePacket.type() == MessageType.ACK) {
                     int sequence = Math.toIntExact(responsePacket.acknowledgementNumber());
                     if (packets.containsKey(sequence)) {
+                        ProtocolPacket acknowledgedPacket = packets.get(sequence);
+                        long rttNanos = System.nanoTime() - firstSendNanos.get(sequence);
                         acknowledged.add(sequence);
                         packets.remove(sequence);
                         deadlines.remove(sequence);
-                        if (attempts.get(sequence) == 1) rttSamplesNanos.add(System.nanoTime() - firstSendNanos.get(sequence));
+                        if (attempts.get(sequence) == 1) rttSamplesNanos.add(rttNanos);
+                        controller.onAcknowledgement(rttNanos, acknowledgedPacket.payload().length);
                     }
                 }
             } catch (SocketTimeoutException ignored) {
@@ -99,9 +108,14 @@ public final class UdpSender {
                                    Map<Integer, Integer> attempts, Map<Integer, Long> deadlines,
                                    Map<Integer, Long> firstSendNanos, int[] transmissions) throws IOException {
         long now = System.nanoTime();
+        boolean expired = false;
         for (Map.Entry<Integer, ProtocolPacket> entry : packets.entrySet()) {
-            if (now >= deadlines.get(entry.getKey())) transmit(socket, entry.getValue(), attempts, deadlines, firstSendNanos, transmissions);
+            if (now >= deadlines.get(entry.getKey())) {
+                expired = true;
+                transmit(socket, entry.getValue(), attempts, deadlines, firstSendNanos, transmissions);
+            }
         }
+        if (expired) controller.onTimeout();
     }
 
     private void transmit(DatagramSocket socket, ProtocolPacket packet, Map<Integer, Integer> attempts,
@@ -110,6 +124,11 @@ public final class UdpSender {
         int attempt = attempts.getOrDefault(sequence, 0) + 1;
         if (attempt > maxAttempts) throw new IOException("No ACK for sequence " + sequence);
         byte[] encoded = packet.encode();
+        long pacingDelay = controller.pacingDelayNanos(packet.payload().length);
+        if (pacingDelay > 0) {
+            try { Thread.sleep(pacingDelay / 1_000_000L, (int) (pacingDelay % 1_000_000L)); }
+            catch (InterruptedException e) { Thread.currentThread().interrupt(); throw new IOException("Interrupted while pacing", e); }
+        }
         socket.send(new DatagramPacket(encoded, encoded.length, destination));
         attempts.put(sequence, attempt);
         firstSendNanos.putIfAbsent(sequence, System.nanoTime());
