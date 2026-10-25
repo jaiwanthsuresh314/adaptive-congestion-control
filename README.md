@@ -102,6 +102,15 @@ python analysis/plot_results.py results/benchmark.csv --events results
 
 The script writes `benchmark-summary.png` and `packet-sends.png` under `results/plots`. Generated plots are local analysis artifacts and should not be committed unless they are intentionally included as documented experiment results.
 
+To combine multiple benchmark summaries into one comparison report:
+
+```powershell
+python analysis/compare_results.py results/fixed.csv results/aimd.csv results/adaptive.csv --output-dir results/report
+eport
+```
+
+This produces `comparison.csv` and `comparison.png`. The report includes source file, scenario, acknowledgement rate, observed retransmission rate, goodput, and average RTT. It does not claim that a controller is better without controlled, repeated experiments.
+
 ## Interpreting current results
 
 In the latest 100-packet, 256-byte localhost run:
@@ -129,6 +138,8 @@ The next development steps are:
 2. Connect interval aggregation to the offline plots for sending rate, RTT, loss, and fairness views.
 3. Add repeatable configuration files and record random seeds for impairment runs.
 4. Document experiment methodology, limitations, and conclusions based on measured data.
+
+Final evaluation reports must state the host OS/JDK, controller parameters, packet size, duration, network-emulation settings, random seed, number of trials, and whether a value is measured or estimated. Do not infer router queue occupancy from RTT alone, and do not treat localhost throughput as a bottleneck-capacity result.
 
 ## Project handoff
 
