@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Test;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -28,6 +30,32 @@ class UdpImpairmentTest {
             assertEquals(3, receiver.deliveredPackets());
             assertTrue(recorder.snapshot().stream().anyMatch(event -> event.type() == NetworkEvent.EventType.PACKET_RETRANSMITTED));
             assertTrue(recorder.snapshot().stream().anyMatch(event -> event.type() == NetworkEvent.EventType.PACKET_ACKNOWLEDGED));
+        }
+    }
+
+    @Test void retransmitsAfterRepeatedLoss() throws Exception {
+        try (ImpairmentReceiver receiver = new ImpairmentReceiver(Map.of(1L, 2), Map.of())) {
+            receiver.start();
+            UdpSender sender = new UdpSender(new InetSocketAddress("127.0.0.1", receiver.port()), 50, 4,
+                    new FixedRateController(3, Long.MAX_VALUE));
+
+            assertEquals(3, sender.send(List.of("one", "two", "three").stream()
+                    .map(value -> value.getBytes(StandardCharsets.UTF_8)).toArray(byte[][]::new)));
+            assertEquals(2, receiver.droppedPackets());
+            assertEquals(3, receiver.deliveredPackets());
+        }
+    }
+
+    @Test void handlesDelayedAcknowledgementAndOutOfOrderAcks() throws Exception {
+        try (ImpairmentReceiver receiver = new ImpairmentReceiver(
+                Map.of(), Map.of(0L, 80))) {
+            receiver.start();
+            UdpSender sender = new UdpSender(new InetSocketAddress("127.0.0.1", receiver.port()), 150, 3,
+                    new FixedRateController(2, Long.MAX_VALUE));
+
+            byte[][] payloads = {"one".getBytes(StandardCharsets.UTF_8), "two".getBytes(StandardCharsets.UTF_8)};
+            assertEquals(2, sender.sendWithMetrics(payloads).acknowledgedPackets());
+            assertEquals(2, receiver.deliveredPackets());
         }
     }
 }
