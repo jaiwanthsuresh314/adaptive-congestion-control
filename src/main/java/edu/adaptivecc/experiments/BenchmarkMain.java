@@ -31,17 +31,20 @@ public final class BenchmarkMain {
         byte[][] payloads = new byte[packetCount][payloadSize];
         for (int i = 0; i < packetCount; i++) Arrays.fill(payloads[i], (byte) (i & 0xff));
 
-        int[] windows = controllerName.equalsIgnoreCase("aimd") ? new int[]{1} : new int[]{1, 4, 16};
+        int[] windows = controllerName.equalsIgnoreCase("aimd") || controllerName.equalsIgnoreCase("adaptive") ? new int[]{1} : new int[]{1, 4, 16};
         for (int window : windows) {
             try (UdpReceiver receiver = new UdpReceiver(0)) {
                 receiver.start();
                 CongestionController controller = controllerName.equalsIgnoreCase("aimd")
                         ? new AimdController(1, 0.5, 1, 16)
+                        : controllerName.equalsIgnoreCase("adaptive")
+                        ? new edu.adaptivecc.congestion.AdaptiveController()
                         : new FixedRateController(window, rate);
                 TimeSeriesRecorder recorder = new TimeSeriesRecorder();
                 UdpSender sender = new UdpSender(new InetSocketAddress("127.0.0.1", receiver.port()), timeoutMillis, maxAttempts, controller, recorder);
                 TransferMetrics metrics = sender.sendWithMetrics(payloads);
-                String scenario = controllerName.equalsIgnoreCase("aimd") ? "localhost-aimd" : "localhost-fixed-window-" + window;
+                String scenario = controllerName.equalsIgnoreCase("aimd") ? "localhost-aimd"
+                        : controllerName.equalsIgnoreCase("adaptive") ? "localhost-adaptive" : "localhost-fixed-window-" + window;
                 CsvMetricsWriter.append(output, scenario, payloadSize, controller.congestionWindow(), metrics);
                 System.out.printf("controller=%s window=%d packets=%d goodput=%.2f B/s avgRtt=%.3f ms retransmissions=%d%n",
                         controllerName, controller.congestionWindow(), metrics.acknowledgedPackets(), metrics.goodputBytesPerSecond(), metrics.averageRttMillis(), metrics.retransmissions());

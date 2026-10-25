@@ -1,6 +1,7 @@
 package edu.adaptivecc.transport;
 
 import edu.adaptivecc.congestion.FixedRateController;
+import edu.adaptivecc.congestion.AdaptiveController;
 import edu.adaptivecc.metrics.TimeSeriesRecorder;
 import org.junit.jupiter.api.Test;
 import java.net.InetSocketAddress;
@@ -41,6 +42,15 @@ class UdpLoopbackTest {
                     new FixedRateController(1, Long.MAX_VALUE), recorder);
             assertEquals(1, sender.sendWithMetrics(new byte[][]{"test".getBytes(StandardCharsets.UTF_8)}).acknowledgedPackets());
             assertEquals(2, recorder.size());
+        }
+    }
+
+    @Test void adaptiveControllerWorksWithProductionReceiver() throws Exception {
+        try (UdpReceiver receiver = new UdpReceiver(0)) {
+            receiver.start();
+            UdpSender sender = new UdpSender(new InetSocketAddress("127.0.0.1", receiver.port()), 250, 3,
+                    new AdaptiveController(), new TimeSeriesRecorder());
+            assertEquals(1, sender.send(new byte[][]{"adaptive".getBytes(StandardCharsets.UTF_8)}));
         }
     }
 }

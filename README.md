@@ -16,10 +16,11 @@ Milestones 1–4 are implemented:
 - Shared congestion-controller interface.
 - Fixed-rate controller with configurable pacing and window size.
 - AIMD controller with additive increase, multiplicative decrease, and bounded windows.
+- Deterministic adaptive controller using smoothed RTT, RTT variation, delay thresholds, timeouts, and delivery-rate pacing.
 - Optional sender event recording for sent, acknowledged, retransmitted, and lost packets.
 - Benchmark event CSV output, with one event file per benchmark scenario.
 
-The adaptive controller and controlled network experiments are future work. Time-series event logging is now connected to sender activity on the integration branch.
+Controlled network experiments and offline visualization are future work. Time-series event logging is connected to sender activity.
 
 ## Technology
 
@@ -43,7 +44,7 @@ If Maven is not available on `PATH`, use the Maven executable directly, for exam
 & "C:\Program Files\apache-maven-3.10.0-bin\apache-maven-3.10.0\bin\mvn.cmd" test
 ```
 
-The current suite covers packet encoding and validation, controller rules, localhost UDP communication, bounded windows, and metric calculations. The latest verified result is 8 passing tests with no failures or errors.
+The current suite covers packet encoding and validation, controller rules, localhost UDP communication, bounded windows, impairment retransmission, benchmark execution, and metric calculations. The latest verified result is 22 passing tests with no failures or errors.
 
 ## Run the benchmark
 
@@ -56,7 +57,7 @@ java -cp target\classes edu.adaptivecc.experiments.BenchmarkMain
 Useful options include:
 
 ```text
---controller=fixed|aimd
+--controller=fixed|aimd|adaptive
 --packets=100
 --payload=256
 --rate=1000000
@@ -75,6 +76,12 @@ Run AIMD:
 
 ```powershell
 java -cp target\classes edu.adaptivecc.experiments.BenchmarkMain --controller=aimd --packets=100 --payload=256 --output=results\aimd-baseline.csv
+```
+
+Run the adaptive controller:
+
+```powershell
+java -cp target\classes edu.adaptivecc.experiments.BenchmarkMain --controller=adaptive --packets=100 --payload=256 --output=results\adaptive.csv
 ```
 
 The benchmark runs sender and receiver on `127.0.0.1`, compares fixed windows of 1, 4, and 16, or runs the AIMD controller, and writes CSV summaries. Results from the current verified run are kept under `results/` as reproducible examples, not as general network-capacity claims.
@@ -105,14 +112,12 @@ RTT samples are recorded only for packets acknowledged on their first transmissi
 The next development steps are:
 
 1. Extend deterministic impairment tests to cover delay, reordering, and repeated loss.
-2. Implement the deterministic adaptive controller using smoothed RTT, RTT variation, delay increase, loss, timeouts, and delivery rate.
-3. Add tests for each adaptive decision rule and controller limits.
-4. Add controlled experiments for bandwidth changes, propagation delay, random loss, recovery, and competing flows.
-5. Add plots for sending rate, throughput, goodput, RTT, retransmissions, and fairness.
-6. Document experiment configurations, random seeds, limitations, and conclusions based on measured data.
+2. Add controlled experiments for bandwidth changes, propagation delay, random loss, recovery, and competing flows.
+3. Add plots for sending rate, throughput, goodput, RTT, retransmissions, and fairness.
+4. Document experiment configurations, random seeds, limitations, and conclusions based on measured data.
 
 ## Project handoff
 
 This README is also the maintained handoff record for future sessions. Update it when a milestone changes the implementation, test results, benchmark results, limitations, or next steps. Avoid creating a second progress document.
 
-The current review branch is `milestone-4-baselines`; `main` contains the previously completed milestones. The GitHub repository is [jaiwanthsuresh314/adaptive-congestion-control](https://github.com/jaiwanthsuresh314/adaptive-congestion-control).
+The current integration branch is `feature/impairment-integration`; `main` contains the previously merged milestones. The GitHub repository is [jaiwanthsuresh314/adaptive-congestion-control](https://github.com/jaiwanthsuresh314/adaptive-congestion-control).

@@ -10,6 +10,8 @@ import java.net.SocketException;
 import java.net.SocketAddress;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
@@ -18,6 +20,7 @@ public final class UdpReceiver implements AutoCloseable {
     private final DatagramSocket socket;
     private final Set<Long> receivedSequences = ConcurrentHashMap.newKeySet();
     private final AtomicLong deliveredPackets = new AtomicLong();
+    private final CountDownLatch receiveLoopReady = new CountDownLatch(1);
     private volatile boolean running;
     private Thread worker;
 
@@ -31,10 +34,17 @@ public final class UdpReceiver implements AutoCloseable {
         worker = new Thread(this::runLoop, "adaptivecc-receiver");
         worker.setDaemon(true);
         worker.start();
+        try {
+            if (!receiveLoopReady.await(1, TimeUnit.SECONDS)) throw new IllegalStateException("Receiver worker did not become ready");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while starting receiver", e);
+        }
     }
 
     private void runLoop() {
         byte[] storage = new byte[ProtocolPacket.MAX_PACKET_SIZE];
+        receiveLoopReady.countDown();
         while (running) {
             try {
                 DatagramPacket datagram = new DatagramPacket(storage, storage.length);
