@@ -1,11 +1,13 @@
 package edu.adaptivecc.experiments;
 
 import java.nio.file.Path;
+import java.util.Map;
 
 /** Validated, reproducible configuration for one benchmark invocation. */
 public record BenchmarkConfig(int packetCount, int payloadSize, int timeoutMillis, int maxAttempts,
                               String controllerName, long rateBytesPerSecond, long seed,
-                              String scenario, String networkProfile, Path output) {
+                              String scenario, String networkProfile, long dropSequence,
+                              int dropCount, long delayedAckSequence, int delayedAckMillis, Path output) {
     public BenchmarkConfig {
         if (packetCount <= 0 || payloadSize <= 0 || payloadSize > 1200) {
             throw new IllegalArgumentException("packets and payload must be positive; payload must be <= 1200");
@@ -20,6 +22,9 @@ public record BenchmarkConfig(int packetCount, int payloadSize, int timeoutMilli
         if (scenario.isBlank() || networkProfile.isBlank()) {
             throw new IllegalArgumentException("scenario and network profile cannot be blank");
         }
+        if (dropSequence < -1 || dropCount < 0 || delayedAckSequence < -1 || delayedAckMillis < 0) {
+            throw new IllegalArgumentException("invalid impairment configuration");
+        }
     }
 
     public static BenchmarkConfig fromArgs(String[] args) {
@@ -28,7 +33,17 @@ public record BenchmarkConfig(int packetCount, int payloadSize, int timeoutMilli
                 stringArg(args, "controller", "fixed"), longArg(args, "rate", 1_000_000L),
                 longArg(args, "seed", 20261025L), stringArg(args, "scenario", "localhost"),
                 stringArg(args, "network", "uncontrolled"),
+                longArg(args, "drop-sequence", -1), intArg(args, "drop-count", 0),
+                longArg(args, "delay-sequence", -1), intArg(args, "delay-ms", 0),
                 Path.of(stringArg(args, "output", "results/loopback-benchmark.csv")));
+    }
+
+    public boolean hasImpairment() {
+        return dropCount > 0 || delayedAckSequence >= 0 && delayedAckMillis > 0;
+    }
+
+    public Map<Long, Integer> delayedAckMap() {
+        return delayedAckSequence < 0 ? Map.of() : Map.of(delayedAckSequence, delayedAckMillis);
     }
 
     private static int intArg(String[] args, String name, int fallback) {

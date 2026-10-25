@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
-public final class UdpReceiver implements AutoCloseable {
+public final class UdpReceiver implements ExperimentReceiver {
     private static final Logger LOG = Logger.getLogger(UdpReceiver.class.getName());
     private final DatagramSocket socket;
     private final Set<Long> receivedSequences = ConcurrentHashMap.newKeySet();

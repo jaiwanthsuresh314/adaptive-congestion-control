@@ -2,7 +2,13 @@ param(
     [int]$Packets = 100,
     [int]$Payload = 256,
     [long]$Seed = 20261025,
-    [string]$OutputDir = "results/comparison"
+    [string]$OutputDir = "results/comparison",
+    [string]$Scenario = "localhost",
+    [string]$Network = "application-emulation",
+    [long]$DropSequence = -1,
+    [int]$DropCount = 0,
+    [long]$DelaySequence = -1,
+    [int]$DelayMs = 0
 )
 
 $ErrorActionPreference = "Stop"
@@ -19,6 +25,12 @@ foreach ($controller in @("fixed", "aimd", "adaptive")) {
         "--packets=$Packets" `
         "--payload=$Payload" `
         "--seed=$Seed" `
+        "--scenario=$Scenario" `
+        "--network=$Network" `
+        "--drop-sequence=$DropSequence" `
+        "--drop-count=$DropCount" `
+        "--delay-sequence=$DelaySequence" `
+        "--delay-ms=$DelayMs" `
         "--output=$output"
     if ($LASTEXITCODE -ne 0) { throw "Benchmark failed for controller: $controller" }
 }

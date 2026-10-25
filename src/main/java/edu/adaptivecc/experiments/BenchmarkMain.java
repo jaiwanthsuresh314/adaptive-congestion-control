@@ -10,6 +10,8 @@ import edu.adaptivecc.congestion.AimdController;
 import edu.adaptivecc.congestion.CongestionController;
 import edu.adaptivecc.congestion.FixedRateController;
 import edu.adaptivecc.transport.UdpReceiver;
+import edu.adaptivecc.transport.ExperimentReceiver;
+import edu.adaptivecc.transport.UdpImpairmentReceiver;
 import edu.adaptivecc.transport.UdpSender;
 
 import java.net.InetSocketAddress;
@@ -39,7 +41,9 @@ public final class BenchmarkMain {
 
         int[] windows = controllerName.equalsIgnoreCase("aimd") || controllerName.equalsIgnoreCase("adaptive") ? new int[]{1} : new int[]{1, 4, 16};
         for (int window : windows) {
-            try (UdpReceiver receiver = new UdpReceiver(0)) {
+            try (ExperimentReceiver receiver = config.hasImpairment()
+                    ? new UdpImpairmentReceiver(config.dropSequence(), config.dropCount(), config.delayedAckMap())
+                    : new UdpReceiver(0)) {
                 receiver.start();
                 CongestionController controller = controllerName.equalsIgnoreCase("aimd")
                         ? new AimdController(1, 0.5, 1, 16)

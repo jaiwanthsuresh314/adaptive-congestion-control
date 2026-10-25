@@ -20,6 +20,10 @@ public final class ExperimentManifestWriter {
                 + "seed=" + config.seed() + "\n"
                 + "scenario=" + config.scenario() + "\n"
                 + "networkProfile=" + config.networkProfile() + "\n"
+                + "dropSequence=" + config.dropSequence() + "\n"
+                + "dropCount=" + config.dropCount() + "\n"
+                + "delayedAckSequence=" + config.delayedAckSequence() + "\n"
+                + "delayedAckMillis=" + config.delayedAckMillis() + "\n"
                 + "output=" + output.toAbsolutePath() + "\n";
         Files.writeString(manifest, contents);
         return manifest;

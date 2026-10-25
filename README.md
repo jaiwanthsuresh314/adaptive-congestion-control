@@ -6,7 +6,7 @@ The goal is to compare a fixed-rate sender, an AIMD baseline, and a deterministi
 
 ## Current status
 
-Milestones 1–5 are implemented, and Milestone 6 experimentation infrastructure is in progress:
+Milestones 1–6 are implemented. Milestone 7 evaluation and frontend work remain:
 
 - Binary packet format with DATA, ACK, FIN, and FIN_ACK messages.
 - Packet validation, sequence numbers, duplicate suppression, and acknowledgement handling.
@@ -23,6 +23,7 @@ Milestones 1–5 are implemented, and Milestone 6 experimentation infrastructure
 - Properties manifest written beside every benchmark summary CSV.
 - Interval metric CSV output at 100 ms resolution.
 - Congestion-window change events for controller response plots.
+- Windows-compatible application-level UDP impairment emulation for deterministic loss and ACK delay/reordering.
 
 Controlled network experiments and the optional frontend remain future work. Offline CSV analysis is available.
 
@@ -48,7 +49,7 @@ If Maven is not available on `PATH`, use the Maven executable directly, for exam
 & "C:\Program Files\apache-maven-3.10.0-bin\apache-maven-3.10.0\bin\mvn.cmd" test
 ```
 
-The current suite covers packet encoding and validation, controller rules, localhost UDP communication, bounded windows, deterministic loss/delay/reordering impairment, Karn-style retransmission handling, benchmark configuration manifests, interval CSV output, benchmark execution, fairness calculation, interval time-series aggregation, and metric calculations. The latest verified result is 50 passing tests with no failures or errors.
+The current suite covers packet encoding and validation, controller rules, localhost UDP communication, bounded windows, deterministic loss/delay/reordering impairment, Karn-style retransmission handling, benchmark configuration manifests, interval CSV output, Windows impairment benchmarks, fairness calculation, interval time-series aggregation, and metric calculations. The latest verified result is 51 passing tests with no failures or errors.
 
 ## Run the benchmark
 
@@ -68,6 +69,10 @@ Useful options include:
 --seed=20261025
 --scenario=localhost
 --network=uncontrolled
+--drop-sequence=-1
+--drop-count=0
+--delay-sequence=-1
+--delay-ms=0
 --timeout=250
 --attempts=3
 --output=results\benchmark.csv
@@ -137,6 +142,15 @@ ALLOW_TC_NETEM=1 TC_INTERFACE=lo ./scripts/run-netem-matrix.sh
 
 The runner requires explicit authorization and an interface name, cleans up its temporary root qdisc on exit, and writes scenario/network metadata into each manifest. The recovery profile is currently a repeatable impaired profile; a true mid-run capacity transition remains a follow-up experiment.
 
+On Windows, use application-level emulation with real UDP sockets:
+
+```powershell
+.\scripts\run-controller-comparison.ps1 -Scenario loss -Network application-emulation -DropSequence 0 -DropCount 1
+.\scripts\run-controller-comparison.ps1 -Scenario delay -Network application-emulation -DelaySequence 0 -DelayMs 80
+```
+
+These runs emulate deterministic loss and ACK delay/reordering. They are valid protocol/controller experiments, but they must not be described as router queue or physical bottleneck measurements.
+
 ## Interpreting current results
 
 In the latest 100-packet, 256-byte localhost run:
@@ -160,7 +174,7 @@ RTT samples are recorded only for packets acknowledged on their first transmissi
 
 The next development steps are:
 
-1. Run repeated authorized netem trials and record measured results.
+1. Run repeated Windows application-emulation trials and record measured results.
 2. Add a true mid-run bandwidth transition and competing-flow runner.
 3. Document experiment methodology, limitations, and conclusions based on measured data.
 
