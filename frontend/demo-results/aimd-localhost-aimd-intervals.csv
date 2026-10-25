@@ -1,0 +1,2 @@
+interval_start_nanos,interval_duration_nanos,packets_sent,retransmitted_packets,acknowledged_packets,lost_packets,transmitted_bytes,goodput_bytes,average_rtt_ms,packet_loss_rate,sending_rate_bytes_per_sec,goodput_bytes_per_sec
+29985235913400,100000000,100,0,100,0,25600,25600,1.606,0.000000,256000.000,256000.000

@@ -22,17 +22,32 @@ function number(value) { return Number(value || 0); }
 function formatRate(value) { return `${number(value).toLocaleString(undefined, { maximumFractionDigits: 1 })} B/s`; }
 function formatMs(value) { return `${number(value).toFixed(2)} ms`; }
 
-async function loadFiles(fileList) {
+function resetState() {
   state.summaries = [];
   state.intervals.clear();
-  state.artifacts = [...fileList].map(file => file.name);
-  for (const file of fileList) {
-    const text = await file.text();
-    if (file.name.endsWith('.properties')) continue;
-    const rows = parseCsv(text);
-    if (!rows.length) continue;
+  state.artifacts = [];
+}
+
+function ingestArtifact(name, text) {
+  state.artifacts.push(name);
+  if (name.endsWith('.properties')) return;
+  const rows = parseCsv(text);
+  if (!rows.length) return;
     if ('scenario' in rows[0] && 'goodput_bytes_per_sec' in rows[0]) state.summaries.push(...rows);
-    if ('interval_start_nanos' in rows[0]) state.intervals.set(file.name, rows);
+    if ('interval_start_nanos' in rows[0]) state.intervals.set(name, rows);
+}
+
+async function loadFiles(fileList) {
+  resetState();
+  for (const file of fileList) ingestArtifact(file.name, await file.text());
+  render();
+}
+
+async function loadBundled(names) {
+  resetState();
+  for (const name of names) {
+    const response = await fetch(`demo-results/${name}`);
+    if (response.ok) ingestArtifact(name, await response.text());
   }
   render();
 }
@@ -100,3 +115,18 @@ function drawIntervals() {
 }
 
 $('files').addEventListener('change', event => loadFiles(event.target.files));
+$('load-demo').addEventListener('click', () => loadBundled([
+  'fixed.csv', 'aimd.csv', 'adaptive.csv',
+  'fixed-localhost-fixed-window-16-intervals.csv',
+  'aimd-localhost-aimd-intervals.csv',
+  'adaptive-localhost-adaptive-intervals.csv'
+]));
+$('load-impairment').addEventListener('click', () => loadBundled([
+  'loss-adaptive.csv', 'loss-adaptive-loss-adaptive-intervals.csv'
+]));
+$('clear').addEventListener('click', () => { resetState(); render(); });
+$('copy-command').addEventListener('click', async () => {
+  await navigator.clipboard.writeText($('command').textContent);
+  $('copy-command').textContent = 'Copied';
+  setTimeout(() => { $('copy-command').textContent = 'Copy command'; }, 1200);
+});

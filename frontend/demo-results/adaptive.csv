@@ -1,0 +1,2 @@
+scenario,packets,payload_bytes,window,acknowledged,transmissions,retransmissions,retransmission_rate,elapsed_ms,goodput_bytes_per_sec,average_rtt_ms,rtt_variation_ms
+localhost-adaptive,100,256,1,100,100,0,0.000000,487.047,52561.684,4.338,12.243

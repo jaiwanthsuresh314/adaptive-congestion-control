@@ -1,0 +1,4 @@
+scenario,packets,payload_bytes,window,acknowledged,transmissions,retransmissions,retransmission_rate,elapsed_ms,goodput_bytes_per_sec,average_rtt_ms,rtt_variation_ms
+localhost-fixed-window-1,100,256,1,100,100,0,0.000000,171.064,149652.030,0.282,0.256
+localhost-fixed-window-4,100,256,4,100,100,0,0.000000,150.652,169927.708,4.484,0.941
+localhost-fixed-window-16,100,256,16,100,100,0,0.000000,147.707,173315.857,20.351,4.446

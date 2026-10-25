@@ -165,6 +165,8 @@ The next development steps are:
 
 The first frontend is now isolated under `frontend/` as a dependency-free static dashboard. Start it from the project root with `python -m http.server 8000`, open `http://localhost:8000/frontend/`, and select completed result files through the file picker. It should not launch traffic or modify network settings.
 
+The dashboard includes `Load demo results` and `Load loss demo` buttons backed by bundled local benchmark outputs. These are demonstration measurements from one local run, not general performance claims. `Clear` resets the view, and `Copy command` copies a reproducible benchmark command.
+
 The frontend data contract is the generated manifest, summary CSV, interval CSV, and event CSV files. The current views cover controller comparison, goodput, RTT, and interval sending-rate/goodput plots. Later additions can include estimated queueing delay, retransmission/loss events, congestion-window overlays, and multi-flow fairness. A later phase may add a read-only Java HTTP or WebSocket service for live metrics.
 
 Final evaluation reports must state the host OS/JDK, controller parameters, packet size, duration, network-emulation settings, random seed, number of trials, and whether a value is measured or estimated. Do not infer router queue occupancy from RTT alone, and do not treat localhost throughput as a bottleneck-capacity result.

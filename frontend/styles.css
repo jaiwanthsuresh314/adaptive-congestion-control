@@ -20,6 +20,9 @@ h2 { margin: 0; font-size: 18px; }
 .subtitle, .panel-heading span, footer { color: var(--muted); }
 .file-button { background: var(--accent); color: #071817; border-radius: 8px; cursor: pointer; font-weight: 800; padding: 12px 16px; white-space: nowrap; }
 .file-button input { display: none; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+button { background: var(--accent-2); border: 0; border-radius: 7px; color: #0b1020; cursor: pointer; font-weight: 700; padding: 10px 12px; }
+button.secondary { background: var(--panel-light); border: 1px solid var(--border); color: var(--text); }
 main { padding: 0 24px 48px; }
 .empty-state { border: 1px dashed var(--border); border-radius: 12px; color: var(--muted); padding: 42px; text-align: center; }
 .empty-state h2 { color: var(--text); }
@@ -41,4 +44,5 @@ th { color: var(--muted); font-size: 12px; text-transform: uppercase; }
 .artifacts { color: var(--muted); columns: 2; list-style: none; margin: 0; padding: 0; }
 .artifacts li { padding: 4px 0; }
 footer { border-top: 1px solid var(--border); padding: 20px 24px 30px; }
+.command-panel code { background: #0c1119; border: 1px solid var(--border); border-radius: 6px; display: block; margin-bottom: 12px; overflow-x: auto; padding: 12px; white-space: nowrap; }
 @media (max-width: 650px) { .hero { align-items: flex-start; flex-direction: column; } .artifacts { columns: 1; } }
