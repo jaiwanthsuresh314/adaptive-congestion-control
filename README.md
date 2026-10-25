@@ -125,23 +125,6 @@ To run all three controllers with identical localhost inputs:
 .\scripts\run-controller-comparison.ps1 -Packets 100 -Payload 256 -Seed 20261025
 ```
 
-On Linux or macOS, use the equivalent shell runner:
-
-```bash
-PACKETS=100 PAYLOAD=256 SEED=20261025 ./scripts/run-controller-comparison.sh
-```
-
-For bottleneck, delay, and loss experiments, run the Java comparison through an authorized Linux `tc netem` environment. Record the interface, rate, delay, loss, seed, and trial number in the generated manifest; restore the interface configuration after every trial.
-
-The guarded Linux matrix runner executes stable, bottleneck, delay, loss, and recovery profiles:
-
-```bash
-mvn test
-ALLOW_TC_NETEM=1 TC_INTERFACE=lo ./scripts/run-netem-matrix.sh
-```
-
-The runner requires explicit authorization and an interface name, cleans up its temporary root qdisc on exit, and writes scenario/network metadata into each manifest. The recovery profile is currently a repeatable impaired profile; a true mid-run capacity transition remains a follow-up experiment.
-
 On Windows, use application-level emulation with real UDP sockets:
 
 ```powershell
