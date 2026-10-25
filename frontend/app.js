@@ -52,6 +52,18 @@ async function loadBundled(names) {
   render();
 }
 
+async function loadFromBackend() {
+  const response = await fetch('/api/results');
+  if (!response.ok) throw new Error(`Backend returned ${response.status}`);
+  const entries = await response.json();
+  resetState();
+  for (const entry of entries) {
+    const artifact = await fetch(`/api/results/${encodeURIComponent(entry.name)}`);
+    if (artifact.ok) ingestArtifact(entry.name, await artifact.text());
+  }
+  render();
+}
+
 function render() {
   $('empty-state').classList.toggle('hidden', state.summaries.length > 0 || state.intervals.size > 0);
   $('dashboard').classList.toggle('hidden', state.summaries.length === 0 && state.intervals.size === 0);
@@ -124,6 +136,10 @@ $('load-demo').addEventListener('click', () => loadBundled([
 $('load-impairment').addEventListener('click', () => loadBundled([
   'loss-adaptive.csv', 'loss-adaptive-loss-adaptive-intervals.csv'
 ]));
+$('load-backend').addEventListener('click', async () => {
+  try { await loadFromBackend(); }
+  catch (error) { window.alert(`Backend unavailable. Start DashboardServer first.\n${error.message}`); }
+});
 $('clear').addEventListener('click', () => { resetState(); render(); });
 $('copy-command').addEventListener('click', async () => {
   await navigator.clipboard.writeText($('command').textContent);

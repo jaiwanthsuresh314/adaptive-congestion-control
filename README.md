@@ -49,7 +49,7 @@ If Maven is not available on `PATH`, use the Maven executable directly, for exam
 & "C:\Program Files\apache-maven-3.10.0-bin\apache-maven-3.10.0\bin\mvn.cmd" test
 ```
 
-The current suite covers packet encoding and validation, controller rules, localhost UDP communication, bounded windows, deterministic loss/delay/reordering impairment, Karn-style retransmission handling, benchmark configuration manifests, interval CSV output, Windows impairment benchmarks, fairness calculation, interval time-series aggregation, and metric calculations. The latest verified result is 51 passing tests with no failures or errors.
+The current suite covers packet encoding and validation, controller rules, localhost UDP communication, bounded windows, deterministic loss/delay/reordering impairment, Karn-style retransmission handling, benchmark configuration manifests, interval CSV output, Windows impairment benchmarks, fairness calculation, interval time-series aggregation, dashboard HTTP serving, and metric calculations. The latest verified result is 52 passing tests with no failures or errors.
 
 ## Run the benchmark
 
@@ -163,9 +163,9 @@ The next development steps are:
 
 ## Frontend plan
 
-The first frontend is now isolated under `frontend/` as a dependency-free static dashboard. Start it from the project root with `python -m http.server 8000`, open `http://localhost:8000/frontend/`, and select completed result files through the file picker. It should not launch traffic or modify network settings.
+The first frontend is now isolated under `frontend/` as a dependency-free static dashboard. For file-only mode, start it from the project root with `python -m http.server 8000 --directory frontend` and open `http://localhost:8000/`. For backend integration mode, compile and run `java -cp target/classes edu.adaptivecc.dashboard.DashboardServer`, open the same URL, and use `Load from backend`.
 
-The dashboard includes `Load demo results` and `Load loss demo` buttons backed by bundled local benchmark outputs. These are demonstration measurements from one local run, not general performance claims. `Clear` resets the view, and `Copy command` copies a reproducible benchmark command.
+The dashboard includes `Load demo results` and `Load loss demo` buttons backed by bundled local benchmark outputs. `Load from backend` retrieves the same artifacts through the Java HTTP API. These are demonstration measurements from one local run, not general performance claims. `Clear` resets the view, and `Copy command` copies a reproducible benchmark command.
 
 The frontend data contract is the generated manifest, summary CSV, interval CSV, and event CSV files. The current views cover controller comparison, goodput, RTT, and interval sending-rate/goodput plots. Later additions can include estimated queueing delay, retransmission/loss events, congestion-window overlays, and multi-flow fairness. A later phase may add a read-only Java HTTP or WebSocket service for live metrics.
 
@@ -175,4 +175,4 @@ Final evaluation reports must state the host OS/JDK, controller parameters, pack
 
 This README is also the maintained handoff record for future sessions. Update it when a milestone changes the implementation, test results, benchmark results, limitations, or next steps. Avoid creating a second progress document.
 
-The current integration branch is `feature/impairment-integration`; `main` contains the previously merged milestones. The GitHub repository is [jaiwanthsuresh314/adaptive-congestion-control](https://github.com/jaiwanthsuresh314/adaptive-congestion-control).
+The current integration branch is `codex/frontend-backend-integration`; `main` contains the previously merged milestones. The GitHub repository is [jaiwanthsuresh314/adaptive-congestion-control](https://github.com/jaiwanthsuresh314/adaptive-congestion-control).
