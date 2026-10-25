@@ -98,17 +98,58 @@ function renderArtifacts() {
   $('artifacts').innerHTML = state.artifacts.map(name => `<li>${name}</li>`).join('');
 }
 
+function shortLabel(scenario) {
+  const words = { aimd: 'AIMD', adaptive: 'Adaptive', fixed: 'Fixed', loss: 'Loss', delay: 'Delay' };
+  const label = String(scenario || '')
+    .replace(/^localhost-/, '')
+    .replace(/fixed-window-(\d+)/, 'Fixed $1')
+    .split('-')
+    .map(word => words[word] || word)
+    .join(' ');
+  return label || 'run';
+}
+
+function fitLabel(context, text, maxWidth) {
+  if (context.measureText(text).width <= maxWidth) return [text];
+  const words = text.split(' ');
+  if (words.length > 1) {
+    for (let split = words.length - 1; split > 0; split--) {
+      const first = words.slice(0, split).join(' '); const second = words.slice(split).join(' ');
+      if (context.measureText(first).width <= maxWidth && context.measureText(second).width <= maxWidth) return [first, second];
+    }
+  }
+  let cut = text;
+  while (cut.length > 1 && context.measureText(`${cut}…`).width > maxWidth) cut = cut.slice(0, -1);
+  return [`${cut}…`];
+}
+
+function compactNumber(value) {
+  return number(value).toLocaleString(undefined, { notation: 'compact', maximumFractionDigits: 1 });
+}
+
 function drawBarChart(canvas, rows, field, formatter) {
-  const context = canvas.getContext('2d');
-  const width = canvas.clientWidth * devicePixelRatio; const height = 270 * devicePixelRatio;
+  const context = canvas.getContext('2d'); const scale = devicePixelRatio;
+  const width = canvas.clientWidth * scale; const height = 270 * scale;
   canvas.width = width; canvas.height = height; context.clearRect(0, 0, width, height);
   if (!rows.length) return;
+  const top = 26 * scale; const bottom = 44 * scale; const plot = height - top - bottom;
   const max = Math.max(...rows.map(row => number(row[field])), 1); const gap = width / rows.length;
+  const fontSize = 12 * scale; const lineHeight = 15 * scale;
+  context.textAlign = 'center';
   rows.forEach((row, index) => {
-    const value = number(row[field]); const barHeight = (value / max) * (height - 50);
-    context.fillStyle = index % 2 ? '#8ea8ff' : '#62d6c7'; context.fillRect(index * gap + gap * .18, height - barHeight - 25, gap * .64, barHeight);
-    context.fillStyle = '#9aa8bb'; context.font = `${12 * devicePixelRatio}px system-ui`; context.fillText(row.scenario, index * gap + gap * .12, height - 8);
+    const value = number(row[field]); const barHeight = (value / max) * plot;
+    const centre = index * gap + gap / 2; const barTop = top + plot - barHeight;
+    context.fillStyle = index % 2 ? '#8ea8ff' : '#62d6c7';
+    context.fillRect(centre - gap * .32, barTop, gap * .64, barHeight);
+    context.font = `600 ${fontSize}px system-ui`; context.fillStyle = '#e6ebf2';
+    const valueText = field.includes('rtt') ? number(value).toFixed(2) : compactNumber(value);
+    context.fillText(valueText, centre, barTop - 6 * scale);
+    context.font = `${fontSize}px system-ui`; context.fillStyle = '#9aa8bb';
+    fitLabel(context, shortLabel(row.scenario), gap * .92).forEach((line, lineIndex) => {
+      context.fillText(line, centre, top + plot + 16 * scale + lineIndex * lineHeight);
+    });
   });
+  context.textAlign = 'start';
 }
 
 function drawIntervals() {
