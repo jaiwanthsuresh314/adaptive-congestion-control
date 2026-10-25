@@ -44,7 +44,7 @@ If Maven is not available on `PATH`, use the Maven executable directly, for exam
 & "C:\Program Files\apache-maven-3.10.0-bin\apache-maven-3.10.0\bin\mvn.cmd" test
 ```
 
-The current suite covers packet encoding and validation, controller rules, localhost UDP communication, bounded windows, deterministic loss/delay/reordering impairment, benchmark execution, fairness calculation, interval time-series aggregation, and metric calculations. The latest verified result is 29 passing tests with no failures or errors.
+The current suite covers packet encoding and validation, controller rules, localhost UDP communication, bounded windows, deterministic loss/delay/reordering impairment, Karn-style retransmission handling, benchmark execution, fairness calculation, interval time-series aggregation, and metric calculations. The latest verified result is 30 passing tests with no failures or errors.
 
 ## Run the benchmark
 

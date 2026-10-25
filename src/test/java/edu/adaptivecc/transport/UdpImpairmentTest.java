@@ -2,6 +2,7 @@ package edu.adaptivecc.transport;
 
 import edu.adaptivecc.metrics.NetworkEvent;
 import edu.adaptivecc.metrics.TimeSeriesRecorder;
+import edu.adaptivecc.congestion.CongestionController;
 import edu.adaptivecc.congestion.FixedRateController;
 import org.junit.jupiter.api.Test;
 
@@ -57,5 +58,28 @@ class UdpImpairmentTest {
             assertEquals(2, sender.sendWithMetrics(payloads).acknowledgedPackets());
             assertEquals(2, receiver.deliveredPackets());
         }
+    }
+
+    @Test void retransmittedAckDoesNotTrainCongestionController() throws Exception {
+        try (DroppingReceiver receiver = new DroppingReceiver(0, 0)) {
+            receiver.start();
+            RecordingController controller = new RecordingController();
+            UdpSender sender = new UdpSender(new InetSocketAddress("127.0.0.1", receiver.port()), 50, 4,
+                    controller);
+            byte[][] payloads = {"one".getBytes(StandardCharsets.UTF_8), "two".getBytes(StandardCharsets.UTF_8)};
+
+            assertEquals(2, sender.send(payloads));
+            assertEquals(1, controller.acknowledgements,
+                    "only the first-transmission ACK should reach congestion control");
+        }
+    }
+
+    private static final class RecordingController implements CongestionController {
+        private int acknowledgements;
+
+        @Override public int congestionWindow() { return 2; }
+        @Override public long pacingDelayNanos(int payloadBytes) { return 0; }
+        @Override public void onAcknowledgement(long rttNanos, int payloadBytes) { acknowledgements++; }
+        @Override public void onTimeout() { }
     }
 }

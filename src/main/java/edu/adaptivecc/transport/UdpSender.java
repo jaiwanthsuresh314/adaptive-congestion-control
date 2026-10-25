@@ -105,7 +105,11 @@ public final class UdpSender {
                         packets.remove(sequence);
                         deadlines.remove(sequence);
                         if (attempts.get(sequence) == 1) rttSamplesNanos.add(rttNanos);
-                        controller.onAcknowledgement(rttNanos, acknowledgedPacket.payload().length);
+                        // Karn's algorithm: an ACK for a retransmitted packet has no
+                        // unambiguous RTT sample, so it must not train congestion control.
+                        if (attempts.get(sequence) == 1) {
+                            controller.onAcknowledgement(rttNanos, acknowledgedPacket.payload().length);
+                        }
                     }
                 }
             } catch (SocketTimeoutException ignored) {
