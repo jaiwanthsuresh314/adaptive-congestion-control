@@ -66,6 +66,8 @@ Useful options include:
 --payload=256
 --rate=1000000
 --seed=20261025
+--scenario=localhost
+--network=uncontrolled
 --timeout=250
 --attempts=3
 --output=results\benchmark.csv
@@ -102,7 +104,7 @@ python -m pip install -r analysis/requirements.txt
 python analysis/plot_results.py results/benchmark.csv --events results
 ```
 
-The script writes `benchmark-summary.png` and `packet-sends.png` under `results/plots`. Generated plots are local analysis artifacts and should not be committed unless they are intentionally included as documented experiment results.
+The script writes `benchmark-summary.png` and `packet-sends.png` under `results/plots`. Add `--intervals results` to also generate `interval-rates-rtt.png`. Generated plots are local analysis artifacts and should not be committed unless they are intentionally included as documented experiment results.
 
 To combine multiple benchmark summaries into one comparison report:
 
@@ -125,6 +127,15 @@ PACKETS=100 PAYLOAD=256 SEED=20261025 ./scripts/run-controller-comparison.sh
 ```
 
 For bottleneck, delay, and loss experiments, run the Java comparison through an authorized Linux `tc netem` environment. Record the interface, rate, delay, loss, seed, and trial number in the generated manifest; restore the interface configuration after every trial.
+
+The guarded Linux matrix runner executes stable, bottleneck, delay, loss, and recovery profiles:
+
+```bash
+mvn test
+ALLOW_TC_NETEM=1 TC_INTERFACE=lo ./scripts/run-netem-matrix.sh
+```
+
+The runner requires explicit authorization and an interface name, cleans up its temporary root qdisc on exit, and writes scenario/network metadata into each manifest. The recovery profile is currently a repeatable impaired profile; a true mid-run capacity transition remains a follow-up experiment.
 
 ## Interpreting current results
 
@@ -149,10 +160,9 @@ RTT samples are recorded only for packets acknowledged on their first transmissi
 
 The next development steps are:
 
-1. Add controlled experiments for bandwidth changes, propagation delay, random loss, recovery, and competing flows.
-2. Connect interval aggregation to the offline plots for sending rate, RTT, loss, and fairness views.
-3. Add repeatable configuration files and record random seeds for impairment runs.
-4. Document experiment methodology, limitations, and conclusions based on measured data.
+1. Run repeated authorized netem trials and record measured results.
+2. Add a true mid-run bandwidth transition and competing-flow runner.
+3. Document experiment methodology, limitations, and conclusions based on measured data.
 
 ## Frontend plan
 

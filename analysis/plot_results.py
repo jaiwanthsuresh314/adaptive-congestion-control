@@ -61,10 +61,33 @@ def plot_events(event_files: list[Path], output: Path) -> None:
     plt.close(figure)
 
 
+def plot_intervals(interval_files: list[Path], output: Path) -> None:
+    figure, axes = plt.subplots(2, 1, figsize=(10, 7), sharex=True)
+    for interval_file in interval_files:
+        intervals = pd.read_csv(interval_file)
+        if intervals.empty:
+            continue
+        elapsed = (intervals["interval_start_nanos"] - intervals["interval_start_nanos"].min()) / 1_000_000_000
+        label = interval_file.stem
+        axes[0].plot(elapsed, intervals["sending_rate_bytes_per_sec"], label=label)
+        axes[0].plot(elapsed, intervals["goodput_bytes_per_sec"], linestyle="--")
+        axes[1].plot(elapsed, intervals["average_rtt_ms"], label=label)
+    axes[0].set_ylabel("Rate (bytes/s)")
+    axes[1].set_ylabel("Average RTT (ms)")
+    axes[1].set_xlabel("Elapsed time (s)")
+    for axis in axes:
+        axis.grid(alpha=0.3)
+        axis.legend(fontsize="small")
+    figure.tight_layout()
+    figure.savefig(output, dpi=150)
+    plt.close(figure)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("summary", type=Path, help="BenchmarkMain summary CSV")
     parser.add_argument("--events", type=Path, help="Directory containing *-events.csv files")
+    parser.add_argument("--intervals", type=Path, help="Directory containing *-intervals.csv files")
     parser.add_argument("--output-dir", type=Path, default=Path("results/plots"))
     arguments = parser.parse_args()
     arguments.output_dir.mkdir(parents=True, exist_ok=True)
@@ -74,6 +97,9 @@ def main() -> None:
     if arguments.events:
         plot_events(sorted(arguments.events.glob("*-events.csv")),
                     arguments.output_dir / "packet-sends.png")
+    if arguments.intervals:
+        plot_intervals(sorted(arguments.intervals.glob("*-intervals.csv")),
+                       arguments.output_dir / "interval-rates-rtt.png")
 
 
 if __name__ == "__main__":

@@ -49,8 +49,8 @@ public final class BenchmarkMain {
                 TimeSeriesRecorder recorder = new TimeSeriesRecorder();
                 UdpSender sender = new UdpSender(new InetSocketAddress("127.0.0.1", receiver.port()), timeoutMillis, maxAttempts, controller, recorder);
                 TransferMetrics metrics = sender.sendWithMetrics(payloads);
-                String scenario = controllerName.equalsIgnoreCase("aimd") ? "localhost-aimd"
-                        : controllerName.equalsIgnoreCase("adaptive") ? "localhost-adaptive" : "localhost-fixed-window-" + window;
+                String scenario = config.scenario() + "-" + (controllerName.equalsIgnoreCase("aimd") ? "aimd"
+                        : controllerName.equalsIgnoreCase("adaptive") ? "adaptive" : "fixed-window-" + window);
                 CsvMetricsWriter.append(output, scenario, payloadSize, controller.congestionWindow(), metrics);
                 System.out.printf("controller=%s window=%d packets=%d goodput=%.2f B/s avgRtt=%.3f ms retransmissions=%d%n",
                         controllerName, controller.congestionWindow(), metrics.acknowledgedPackets(), metrics.goodputBytesPerSecond(), metrics.averageRttMillis(), metrics.retransmissions());

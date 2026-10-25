@@ -18,6 +18,8 @@ public final class ExperimentManifestWriter {
                 + "maxAttempts=" + config.maxAttempts() + "\n"
                 + "rateBytesPerSecond=" + config.rateBytesPerSecond() + "\n"
                 + "seed=" + config.seed() + "\n"
+                + "scenario=" + config.scenario() + "\n"
+                + "networkProfile=" + config.networkProfile() + "\n"
                 + "output=" + output.toAbsolutePath() + "\n";
         Files.writeString(manifest, contents);
         return manifest;
