@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AdaptiveCC Results Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="hero">
+    <div>
+      <p class="eyebrow">Adaptive Congestion Control</p>
+      <h1>Experiment results</h1>
+      <p class="subtitle">Load benchmark output files to compare controllers and inspect their response over time.</p>
+    </div>
+    <label class="file-button">
+      Load result files
+      <input id="files" type="file" multiple accept=".csv,.properties">
+    </label>
+  </header>
+
+  <main>
+    <section id="empty-state" class="empty-state">
+      <h2>No results loaded</h2>
+      <p>Select one or more summary CSVs, interval CSVs, event CSVs, and properties manifests from your results directory.</p>
+    </section>
+
+    <section id="dashboard" class="hidden">
+      <div id="metadata" class="cards"></div>
+
+      <section class="panel">
+        <div class="panel-heading"><h2>Controller comparison</h2><span id="summary-count"></span></div>
+        <div class="table-wrap"><table id="summary-table"></table></div>
+      </section>
+
+      <div class="chart-grid">
+        <section class="panel"><div class="panel-heading"><h2>Goodput</h2><span>bytes/sec</span></div><canvas id="goodput-chart"></canvas></section>
+        <section class="panel"><div class="panel-heading"><h2>Average RTT</h2><span>milliseconds</span></div><canvas id="rtt-chart"></canvas></section>
+      </div>
+
+      <section class="panel">
+        <div class="panel-heading"><h2>Interval response</h2><span>select an interval file</span></div>
+        <select id="interval-select"></select>
+        <canvas id="interval-chart"></canvas>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading"><h2>Loaded artifacts</h2><span id="artifact-count"></span></div>
+        <ul id="artifacts" class="artifacts"></ul>
+      </section>
+    </section>
+  </main>
+
+  <footer>Read-only dashboard · measurements remain local in your browser</footer>
+  <script src="app.js"></script>
+</body>
+</html>
