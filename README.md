@@ -111,6 +111,20 @@ eport
 
 This produces `comparison.csv` and `comparison.png`. The report includes source file, scenario, acknowledgement rate, observed retransmission rate, goodput, and average RTT. It does not claim that a controller is better without controlled, repeated experiments.
 
+To run all three controllers with identical localhost inputs:
+
+```powershell
+.\scripts\run-controller-comparison.ps1 -Packets 100 -Payload 256 -Seed 20261025
+```
+
+On Linux or macOS, use the equivalent shell runner:
+
+```bash
+PACKETS=100 PAYLOAD=256 SEED=20261025 ./scripts/run-controller-comparison.sh
+```
+
+For bottleneck, delay, and loss experiments, run the Java comparison through an authorized Linux `tc netem` environment. Record the interface, rate, delay, loss, seed, and trial number in the generated manifest; restore the interface configuration after every trial.
+
 ## Interpreting current results
 
 In the latest 100-packet, 256-byte localhost run:
