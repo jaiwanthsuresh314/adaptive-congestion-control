@@ -21,8 +21,10 @@ Milestones 1–5 are implemented, and Milestone 6 experimentation infrastructure
 - Benchmark event CSV output, with one event file per benchmark scenario.
 - Validated benchmark configuration with deterministic payload generation from a recorded seed.
 - Properties manifest written beside every benchmark summary CSV.
+- Interval metric CSV output at 100 ms resolution.
+- Congestion-window change events for controller response plots.
 
-Controlled network experiments and offline visualization are future work. Time-series event logging is connected to sender activity.
+Controlled network experiments and the optional frontend remain future work. Offline CSV analysis is available.
 
 ## Technology
 
@@ -46,7 +48,7 @@ If Maven is not available on `PATH`, use the Maven executable directly, for exam
 & "C:\Program Files\apache-maven-3.10.0-bin\apache-maven-3.10.0\bin\mvn.cmd" test
 ```
 
-The current suite covers packet encoding and validation, controller rules, localhost UDP communication, bounded windows, deterministic loss/delay/reordering impairment, Karn-style retransmission handling, benchmark configuration manifests, benchmark execution, fairness calculation, interval time-series aggregation, and metric calculations. The latest verified result is 49 passing tests with no failures or errors.
+The current suite covers packet encoding and validation, controller rules, localhost UDP communication, bounded windows, deterministic loss/delay/reordering impairment, Karn-style retransmission handling, benchmark configuration manifests, interval CSV output, benchmark execution, fairness calculation, interval time-series aggregation, and metric calculations. The latest verified result is 50 passing tests with no failures or errors.
 
 ## Run the benchmark
 
@@ -89,7 +91,7 @@ java -cp target\classes edu.adaptivecc.experiments.BenchmarkMain --controller=ad
 
 The benchmark runs sender and receiver on `127.0.0.1`, compares fixed windows of 1, 4, and 16, or runs the AIMD controller, and writes CSV summaries. Results from the current verified run are kept under `results/` as reproducible examples, not as general network-capacity claims.
 
-Each benchmark summary now has matching time-series files such as `fixed-baseline-localhost-fixed-window-4-events.csv` and a properties manifest such as `benchmark.csv.properties`. The manifest records the controller, packet settings, timeout, rate, seed, and output path. Event files contain timestamped sender-side events and first-transmission RTT samples where available.
+Each benchmark summary now has matching event, interval, and properties files. For example, `adaptive-localhost-adaptive-events.csv`, `adaptive-localhost-adaptive-intervals.csv`, and `adaptive.csv.properties`. Interval files contain sending rate, goodput, RTT, retransmission, and loss values at 100 ms resolution. Event files also record congestion-window changes.
 
 ## Offline plots
 
@@ -106,7 +108,6 @@ To combine multiple benchmark summaries into one comparison report:
 
 ```powershell
 python analysis/compare_results.py results/fixed.csv results/aimd.csv results/adaptive.csv --output-dir results/report
-eport
 ```
 
 This produces `comparison.csv` and `comparison.png`. The report includes source file, scenario, acknowledgement rate, observed retransmission rate, goodput, and average RTT. It does not claim that a controller is better without controlled, repeated experiments.
@@ -152,6 +153,12 @@ The next development steps are:
 2. Connect interval aggregation to the offline plots for sending rate, RTT, loss, and fairness views.
 3. Add repeatable configuration files and record random seeds for impairment runs.
 4. Document experiment methodology, limitations, and conclusions based on measured data.
+
+## Frontend plan
+
+The frontend should remain isolated from the Java transport and congestion-control code initially. A React/Vite/TypeScript dashboard can load completed experiment files from a selected results directory or through drag-and-drop. It should not launch traffic or modify network settings in its first version.
+
+The frontend data contract should be the generated manifest, summary CSV, interval CSV, and event CSV files. Its first views should be controller comparison, sending rate/goodput over time, RTT and estimated queueing delay, congestion-window changes, retransmission/loss events, and multi-flow fairness. A later phase may add a read-only Java HTTP or WebSocket service for live metrics; network control should remain an explicit, separately authorized operation.
 
 Final evaluation reports must state the host OS/JDK, controller parameters, packet size, duration, network-emulation settings, random seed, number of trials, and whether a value is measured or estimated. Do not infer router queue occupancy from RTT alone, and do not treat localhost throughput as a bottleneck-capacity result.
 

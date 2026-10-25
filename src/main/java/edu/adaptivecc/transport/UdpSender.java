@@ -26,6 +26,7 @@ public final class UdpSender {
     private final int maxAttempts;
     private final CongestionController controller;
     private final TimeSeriesRecorder eventRecorder;
+    private int lastRecordedWindow;
 
     public UdpSender(InetSocketAddress destination, int acknowledgementTimeoutMillis, int maxAttempts) {
         this(destination, acknowledgementTimeoutMillis, maxAttempts, 1);
@@ -48,6 +49,7 @@ public final class UdpSender {
         this.maxAttempts = maxAttempts;
         this.controller = controller;
         this.eventRecorder = eventRecorder;
+        this.lastRecordedWindow = controller.congestionWindow();
     }
 
     public int send(byte[][] payloads) throws IOException {
@@ -110,6 +112,7 @@ public final class UdpSender {
                         if (attempts.get(sequence) == 1) {
                             controller.onAcknowledgement(rttNanos, acknowledgedPacket.payload().length);
                         }
+                        recordWindowChange();
                     }
                 }
             } catch (SocketTimeoutException ignored) {
@@ -130,7 +133,10 @@ public final class UdpSender {
                 transmit(socket, entry.getValue(), attempts, deadlines, firstSendNanos, transmissions);
             }
         }
-        if (expired) controller.onTimeout();
+        if (expired) {
+            controller.onTimeout();
+            recordWindowChange();
+        }
     }
 
     private void transmit(DatagramSocket socket, ProtocolPacket packet, Map<Integer, Integer> attempts,
@@ -158,6 +164,14 @@ public final class UdpSender {
 
     private void recordEvent(NetworkEvent.EventType type, long sequence, long rttNanos, long payloadBytes) {
         if (eventRecorder != null) eventRecorder.record(new NetworkEvent(System.nanoTime(), type, sequence, rttNanos, payloadBytes));
+    }
+
+    private void recordWindowChange() {
+        int window = controller.congestionWindow();
+        if (eventRecorder != null && window != lastRecordedWindow) {
+            eventRecorder.record(new NetworkEvent(System.nanoTime(), NetworkEvent.EventType.WINDOW_CHANGED, window, 0, 0));
+        }
+        lastRecordedWindow = window;
     }
 
     private record DataTransfer(int acknowledged, int transmissions, List<Long> rttSamplesNanos) { }

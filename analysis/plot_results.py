@@ -18,8 +18,8 @@ import pandas as pd
 
 def plot_summary(summary: pd.DataFrame, output: Path) -> None:
     value_columns = {
-        "goodput_bytes_per_second": "Goodput (bytes/s)",
-        "average_rtt_millis": "Average RTT (ms)",
+        "goodput_bytes_per_sec": "Goodput (bytes/s)",
+        "average_rtt_ms": "Average RTT (ms)",
         "retransmissions": "Retransmissions",
     }
     available = [column for column in value_columns if column in summary.columns]
@@ -47,6 +47,10 @@ def plot_events(event_files: list[Path], output: Path) -> None:
         sent = events[events["event_type"].isin(["PACKET_SENT", "PACKET_RETRANSMITTED"])]
         axis.scatter((sent["timestamp_nanos"] - start) / 1_000_000_000, sent["packet_id"],
                      s=10, label=event_file.stem)
+        windows = events[events["event_type"] == "WINDOW_CHANGED"]
+        if not windows.empty:
+            axis.step((windows["timestamp_nanos"] - start) / 1_000_000_000,
+                      windows["packet_id"], where="post", alpha=0.5)
     axis.set_xlabel("Elapsed time (s)")
     axis.set_ylabel("Packet sequence")
     axis.grid(alpha=0.3)

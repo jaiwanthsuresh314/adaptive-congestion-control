@@ -38,6 +38,7 @@ public record NetworkEvent(
         PACKET_SENT,
         PACKET_ACKNOWLEDGED,
         PACKET_LOST,
-        PACKET_RETRANSMITTED
+        PACKET_RETRANSMITTED,
+        WINDOW_CHANGED
     }
 }

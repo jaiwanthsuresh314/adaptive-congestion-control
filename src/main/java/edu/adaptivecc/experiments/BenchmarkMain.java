@@ -2,6 +2,8 @@ package edu.adaptivecc.experiments;
 
 import edu.adaptivecc.metrics.CsvMetricsWriter;
 import edu.adaptivecc.metrics.TimeSeriesCsvWriter;
+import edu.adaptivecc.metrics.IntervalMetricsCsvWriter;
+import edu.adaptivecc.metrics.TimeSeriesAggregator;
 import edu.adaptivecc.metrics.TimeSeriesRecorder;
 import edu.adaptivecc.metrics.TransferMetrics;
 import edu.adaptivecc.congestion.AimdController;
@@ -53,7 +55,11 @@ public final class BenchmarkMain {
                 System.out.printf("controller=%s window=%d packets=%d goodput=%.2f B/s avgRtt=%.3f ms retransmissions=%d%n",
                         controllerName, controller.congestionWindow(), metrics.acknowledgedPackets(), metrics.goodputBytesPerSecond(), metrics.averageRttMillis(), metrics.retransmissions());
                 String eventFileName = output.getFileName().toString().replaceFirst("\\.csv$", "-" + scenario + "-events.csv");
-                TimeSeriesCsvWriter.write(output.resolveSibling(eventFileName), recorder.snapshot());
+                var events = recorder.snapshot();
+                TimeSeriesCsvWriter.write(output.resolveSibling(eventFileName), events);
+                String intervalFileName = output.getFileName().toString().replaceFirst("\\.csv$", "-" + scenario + "-intervals.csv");
+                IntervalMetricsCsvWriter.write(output.resolveSibling(intervalFileName),
+                        TimeSeriesAggregator.aggregate(events, 100_000_000L));
             }
         }
         System.out.println("CSV written to " + output.toAbsolutePath());
