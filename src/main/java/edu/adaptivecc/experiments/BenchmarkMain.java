@@ -1,6 +1,8 @@
 package edu.adaptivecc.experiments;
 
 import edu.adaptivecc.metrics.CsvMetricsWriter;
+import edu.adaptivecc.metrics.TimeSeriesCsvWriter;
+import edu.adaptivecc.metrics.TimeSeriesRecorder;
 import edu.adaptivecc.metrics.TransferMetrics;
 import edu.adaptivecc.congestion.AimdController;
 import edu.adaptivecc.congestion.CongestionController;
@@ -36,12 +38,15 @@ public final class BenchmarkMain {
                 CongestionController controller = controllerName.equalsIgnoreCase("aimd")
                         ? new AimdController(1, 0.5, 1, 16)
                         : new FixedRateController(window, rate);
-                UdpSender sender = new UdpSender(new InetSocketAddress("127.0.0.1", receiver.port()), timeoutMillis, maxAttempts, controller);
+                TimeSeriesRecorder recorder = new TimeSeriesRecorder();
+                UdpSender sender = new UdpSender(new InetSocketAddress("127.0.0.1", receiver.port()), timeoutMillis, maxAttempts, controller, recorder);
                 TransferMetrics metrics = sender.sendWithMetrics(payloads);
                 String scenario = controllerName.equalsIgnoreCase("aimd") ? "localhost-aimd" : "localhost-fixed-window-" + window;
                 CsvMetricsWriter.append(output, scenario, payloadSize, controller.congestionWindow(), metrics);
                 System.out.printf("controller=%s window=%d packets=%d goodput=%.2f B/s avgRtt=%.3f ms retransmissions=%d%n",
                         controllerName, controller.congestionWindow(), metrics.acknowledgedPackets(), metrics.goodputBytesPerSecond(), metrics.averageRttMillis(), metrics.retransmissions());
+                String eventFileName = output.getFileName().toString().replaceFirst("\\.csv$", "-" + scenario + "-events.csv");
+                TimeSeriesCsvWriter.write(output.resolveSibling(eventFileName), recorder.snapshot());
             }
         }
         System.out.println("CSV written to " + output.toAbsolutePath());

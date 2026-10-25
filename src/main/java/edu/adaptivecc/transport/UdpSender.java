@@ -5,6 +5,8 @@ import edu.adaptivecc.protocol.ProtocolPacket;
 import edu.adaptivecc.metrics.TransferMetrics;
 import edu.adaptivecc.congestion.CongestionController;
 import edu.adaptivecc.congestion.FixedRateController;
+import edu.adaptivecc.metrics.NetworkEvent;
+import edu.adaptivecc.metrics.TimeSeriesRecorder;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -23,6 +25,7 @@ public final class UdpSender {
     private final int acknowledgementTimeoutMillis;
     private final int maxAttempts;
     private final CongestionController controller;
+    private final TimeSeriesRecorder eventRecorder;
 
     public UdpSender(InetSocketAddress destination, int acknowledgementTimeoutMillis, int maxAttempts) {
         this(destination, acknowledgementTimeoutMillis, maxAttempts, 1);
@@ -33,12 +36,18 @@ public final class UdpSender {
     }
 
     public UdpSender(InetSocketAddress destination, int acknowledgementTimeoutMillis, int maxAttempts, CongestionController controller) {
+        this(destination, acknowledgementTimeoutMillis, maxAttempts, controller, null);
+    }
+
+    public UdpSender(InetSocketAddress destination, int acknowledgementTimeoutMillis, int maxAttempts,
+                     CongestionController controller, TimeSeriesRecorder eventRecorder) {
         if (acknowledgementTimeoutMillis <= 0 || maxAttempts <= 0) throw new IllegalArgumentException("timeouts and attempts must be positive");
         if (controller == null) throw new IllegalArgumentException("controller is required");
         this.destination = destination;
         this.acknowledgementTimeoutMillis = acknowledgementTimeoutMillis;
         this.maxAttempts = maxAttempts;
         this.controller = controller;
+        this.eventRecorder = eventRecorder;
     }
 
     public int send(byte[][] payloads) throws IOException {
@@ -90,6 +99,8 @@ public final class UdpSender {
                     if (packets.containsKey(sequence)) {
                         ProtocolPacket acknowledgedPacket = packets.get(sequence);
                         long rttNanos = System.nanoTime() - firstSendNanos.get(sequence);
+                        recordEvent(NetworkEvent.EventType.PACKET_ACKNOWLEDGED, sequence,
+                                attempts.get(sequence) == 1 ? rttNanos : 0, acknowledgedPacket.payload().length);
                         acknowledged.add(sequence);
                         packets.remove(sequence);
                         deadlines.remove(sequence);
@@ -122,7 +133,10 @@ public final class UdpSender {
                           Map<Integer, Long> deadlines, Map<Integer, Long> firstSendNanos, int[] transmissions) throws IOException {
         int sequence = Math.toIntExact(packet.sequenceNumber());
         int attempt = attempts.getOrDefault(sequence, 0) + 1;
-        if (attempt > maxAttempts) throw new IOException("No ACK for sequence " + sequence);
+        if (attempt > maxAttempts) {
+            recordEvent(NetworkEvent.EventType.PACKET_LOST, sequence, 0, packet.payload().length);
+            throw new IOException("No ACK for sequence " + sequence);
+        }
         byte[] encoded = packet.encode();
         long pacingDelay = controller.pacingDelayNanos(packet.payload().length);
         if (pacingDelay > 0) {
@@ -133,7 +147,13 @@ public final class UdpSender {
         attempts.put(sequence, attempt);
         firstSendNanos.putIfAbsent(sequence, System.nanoTime());
         transmissions[0]++;
+        recordEvent(attempt == 1 ? NetworkEvent.EventType.PACKET_SENT : NetworkEvent.EventType.PACKET_RETRANSMITTED,
+                sequence, 0, packet.payload().length);
         deadlines.put(sequence, System.nanoTime() + acknowledgementTimeoutMillis * 1_000_000L);
+    }
+
+    private void recordEvent(NetworkEvent.EventType type, long sequence, long rttNanos, long payloadBytes) {
+        if (eventRecorder != null) eventRecorder.record(new NetworkEvent(System.nanoTime(), type, sequence, rttNanos, payloadBytes));
     }
 
     private record DataTransfer(int acknowledged, int transmissions, List<Long> rttSamplesNanos) { }
