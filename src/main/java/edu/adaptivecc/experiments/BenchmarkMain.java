@@ -12,24 +12,28 @@ import edu.adaptivecc.transport.UdpSender;
 
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
-import java.util.Arrays;
+import java.util.SplittableRandom;
 
 public final class BenchmarkMain {
     private BenchmarkMain() { }
 
     public static void main(String[] args) throws Exception {
-        int packetCount = intArg(args, "packets", 100);
-        int payloadSize = intArg(args, "payload", 256);
-        int timeoutMillis = intArg(args, "timeout", 250);
-        int maxAttempts = intArg(args, "attempts", 3);
-        String controllerName = stringArg(args, "controller", "fixed");
-        long rate = longArg(args, "rate", 1_000_000L);
-        Path output = Path.of(stringArg(args, "output", "results/loopback-benchmark.csv"));
-        if (packetCount <= 0 || payloadSize <= 0 || payloadSize > 1200) throw new IllegalArgumentException("packets and payload must be positive; payload must be <= 1200");
+        BenchmarkConfig config = BenchmarkConfig.fromArgs(args);
+        int packetCount = config.packetCount();
+        int payloadSize = config.payloadSize();
+        int timeoutMillis = config.timeoutMillis();
+        int maxAttempts = config.maxAttempts();
+        String controllerName = config.controllerName();
+        long rate = config.rateBytesPerSecond();
+        Path output = config.output();
+        ExperimentManifestWriter.write(output, config);
 
         CsvMetricsWriter.writeHeader(output);
         byte[][] payloads = new byte[packetCount][payloadSize];
-        for (int i = 0; i < packetCount; i++) Arrays.fill(payloads[i], (byte) (i & 0xff));
+        SplittableRandom random = new SplittableRandom(config.seed());
+        for (int i = 0; i < packetCount; i++) {
+            for (int j = 0; j < payloadSize; j++) payloads[i][j] = (byte) random.nextInt(256);
+        }
 
         int[] windows = controllerName.equalsIgnoreCase("aimd") || controllerName.equalsIgnoreCase("adaptive") ? new int[]{1} : new int[]{1, 4, 16};
         for (int window : windows) {
@@ -55,17 +59,4 @@ public final class BenchmarkMain {
         System.out.println("CSV written to " + output.toAbsolutePath());
     }
 
-    private static int intArg(String[] args, String name, int fallback) {
-        return Integer.parseInt(stringArg(args, name, Integer.toString(fallback)));
-    }
-
-    private static long longArg(String[] args, String name, long fallback) {
-        return Long.parseLong(stringArg(args, name, Long.toString(fallback)));
-    }
-
-    private static String stringArg(String[] args, String name, String fallback) {
-        String prefix = "--" + name + "=";
-        for (String arg : args) if (arg.startsWith(prefix)) return arg.substring(prefix.length());
-        return fallback;
-    }
 }

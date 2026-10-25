@@ -6,7 +6,7 @@ The goal is to compare a fixed-rate sender, an AIMD baseline, and a deterministi
 
 ## Current status
 
-Milestones 1–4 are implemented:
+Milestones 1–5 are implemented, and Milestone 6 experimentation infrastructure is in progress:
 
 - Binary packet format with DATA, ACK, FIN, and FIN_ACK messages.
 - Packet validation, sequence numbers, duplicate suppression, and acknowledgement handling.
@@ -19,6 +19,8 @@ Milestones 1–4 are implemented:
 - Deterministic adaptive controller using smoothed RTT, RTT variation, delay thresholds, timeouts, and delivery-rate pacing.
 - Optional sender event recording for sent, acknowledged, retransmitted, and lost packets.
 - Benchmark event CSV output, with one event file per benchmark scenario.
+- Validated benchmark configuration with deterministic payload generation from a recorded seed.
+- Properties manifest written beside every benchmark summary CSV.
 
 Controlled network experiments and offline visualization are future work. Time-series event logging is connected to sender activity.
 
@@ -44,7 +46,7 @@ If Maven is not available on `PATH`, use the Maven executable directly, for exam
 & "C:\Program Files\apache-maven-3.10.0-bin\apache-maven-3.10.0\bin\mvn.cmd" test
 ```
 
-The current suite covers packet encoding and validation, controller rules, localhost UDP communication, bounded windows, deterministic loss/delay/reordering impairment, Karn-style retransmission handling, benchmark execution, fairness calculation, interval time-series aggregation, and metric calculations. The latest verified result is 30 passing tests with no failures or errors.
+The current suite covers packet encoding and validation, controller rules, localhost UDP communication, bounded windows, deterministic loss/delay/reordering impairment, Karn-style retransmission handling, benchmark configuration manifests, benchmark execution, fairness calculation, interval time-series aggregation, and metric calculations. The latest verified result is 49 passing tests with no failures or errors.
 
 ## Run the benchmark
 
@@ -61,6 +63,7 @@ Useful options include:
 --packets=100
 --payload=256
 --rate=1000000
+--seed=20261025
 --timeout=250
 --attempts=3
 --output=results\benchmark.csv
@@ -86,7 +89,7 @@ java -cp target\classes edu.adaptivecc.experiments.BenchmarkMain --controller=ad
 
 The benchmark runs sender and receiver on `127.0.0.1`, compares fixed windows of 1, 4, and 16, or runs the AIMD controller, and writes CSV summaries. Results from the current verified run are kept under `results/` as reproducible examples, not as general network-capacity claims.
 
-Each benchmark summary now has matching time-series files such as `fixed-baseline-localhost-fixed-window-4-events.csv`. These files contain timestamped sender-side events and first-transmission RTT samples where available.
+Each benchmark summary now has matching time-series files such as `fixed-baseline-localhost-fixed-window-4-events.csv` and a properties manifest such as `benchmark.csv.properties`. The manifest records the controller, packet settings, timeout, rate, seed, and output path. Event files contain timestamped sender-side events and first-transmission RTT samples where available.
 
 ## Offline plots
 

@@ -17,5 +17,6 @@ class BenchmarkMainTest {
 
         assertTrue(Files.size(output) > 0);
         assertTrue(Files.size(tempDir.resolve("adaptive-localhost-adaptive-events.csv")) > 0);
+        assertTrue(Files.size(tempDir.resolve("adaptive.csv.properties")) > 0);
     }
 }
