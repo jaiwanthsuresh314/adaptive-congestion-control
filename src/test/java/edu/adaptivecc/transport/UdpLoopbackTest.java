@@ -1,5 +1,7 @@
 package edu.adaptivecc.transport;
 
+import edu.adaptivecc.congestion.FixedRateController;
+import edu.adaptivecc.metrics.TimeSeriesRecorder;
 import org.junit.jupiter.api.Test;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
@@ -28,6 +30,17 @@ class UdpLoopbackTest {
             long deadline = System.nanoTime() + 1_000_000_000L;
             while (receiver.deliveredPackets() < payloads.length && System.nanoTime() < deadline) Thread.sleep(10);
             assertEquals(payloads.length, receiver.deliveredPackets());
+        }
+    }
+
+    @Test void senderWithControllerAndRecorderWorksWithProductionReceiver() throws Exception {
+        try (UdpReceiver receiver = new UdpReceiver(0)) {
+            receiver.start();
+            TimeSeriesRecorder recorder = new TimeSeriesRecorder();
+            UdpSender sender = new UdpSender(new InetSocketAddress("127.0.0.1", receiver.port()), 250, 3,
+                    new FixedRateController(1, Long.MAX_VALUE), recorder);
+            assertEquals(1, sender.sendWithMetrics(new byte[][]{"test".getBytes(StandardCharsets.UTF_8)}).acknowledgedPackets());
+            assertEquals(2, recorder.size());
         }
     }
 }

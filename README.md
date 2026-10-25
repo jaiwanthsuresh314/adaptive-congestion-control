@@ -16,8 +16,10 @@ Milestones 1–4 are implemented:
 - Shared congestion-controller interface.
 - Fixed-rate controller with configurable pacing and window size.
 - AIMD controller with additive increase, multiplicative decrease, and bounded windows.
+- Optional sender event recording for sent, acknowledged, retransmitted, and lost packets.
+- Benchmark event CSV output, with one event file per benchmark scenario.
 
-The adaptive controller, controlled network impairment, time-series event logging, and full experiment documentation are future work.
+The adaptive controller and controlled network experiments are future work. Time-series event logging is now connected to sender activity on the integration branch.
 
 ## Technology
 
@@ -77,6 +79,8 @@ java -cp target\classes edu.adaptivecc.experiments.BenchmarkMain --controller=ai
 
 The benchmark runs sender and receiver on `127.0.0.1`, compares fixed windows of 1, 4, and 16, or runs the AIMD controller, and writes CSV summaries. Results from the current verified run are kept under `results/` as reproducible examples, not as general network-capacity claims.
 
+Each benchmark summary now has matching time-series files such as `fixed-baseline-localhost-fixed-window-4-events.csv`. These files contain timestamped sender-side events and first-transmission RTT samples where available.
+
 ## Interpreting current results
 
 In the latest 100-packet, 256-byte localhost run:
@@ -100,13 +104,12 @@ RTT samples are recorded only for packets acknowledged on their first transmissi
 
 The next development steps are:
 
-1. Add timestamped event collection and CSV time-series output.
-2. Add deterministic impairment hooks or a receiver that intentionally drops selected packets so retransmission behavior can be tested.
-3. Implement the deterministic adaptive controller using smoothed RTT, RTT variation, delay increase, loss, timeouts, and delivery rate.
-4. Add tests for each adaptive decision rule and controller limits.
-5. Add controlled experiments for bandwidth changes, propagation delay, random loss, recovery, and competing flows.
-6. Add plots for sending rate, throughput, goodput, RTT, retransmissions, and fairness.
-7. Document experiment configurations, random seeds, limitations, and conclusions based on measured data.
+1. Extend deterministic impairment tests to cover delay, reordering, and repeated loss.
+2. Implement the deterministic adaptive controller using smoothed RTT, RTT variation, delay increase, loss, timeouts, and delivery rate.
+3. Add tests for each adaptive decision rule and controller limits.
+4. Add controlled experiments for bandwidth changes, propagation delay, random loss, recovery, and competing flows.
+5. Add plots for sending rate, throughput, goodput, RTT, retransmissions, and fairness.
+6. Document experiment configurations, random seeds, limitations, and conclusions based on measured data.
 
 ## Project handoff
 
