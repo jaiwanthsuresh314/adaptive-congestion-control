@@ -44,7 +44,7 @@ If Maven is not available on `PATH`, use the Maven executable directly, for exam
 & "C:\Program Files\apache-maven-3.10.0-bin\apache-maven-3.10.0\bin\mvn.cmd" test
 ```
 
-The current suite covers packet encoding and validation, controller rules, localhost UDP communication, bounded windows, deterministic loss/delay/reordering impairment, benchmark execution, fairness calculation, and metric calculations. The latest verified result is 27 passing tests with no failures or errors.
+The current suite covers packet encoding and validation, controller rules, localhost UDP communication, bounded windows, deterministic loss/delay/reordering impairment, benchmark execution, fairness calculation, interval time-series aggregation, and metric calculations. The latest verified result is 29 passing tests with no failures or errors.
 
 ## Run the benchmark
 
@@ -123,7 +123,7 @@ RTT samples are recorded only for packets acknowledged on their first transmissi
 The next development steps are:
 
 1. Add controlled experiments for bandwidth changes, propagation delay, random loss, recovery, and competing flows.
-2. Extend the offline plots with interval sending rate, RTT, loss, and fairness views.
+2. Connect interval aggregation to the offline plots for sending rate, RTT, loss, and fairness views.
 3. Add repeatable configuration files and record random seeds for impairment runs.
 4. Document experiment methodology, limitations, and conclusions based on measured data.
 
