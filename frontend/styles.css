@@ -22,6 +22,7 @@ h2 { margin: 0; font-size: 18px; }
 .file-button input { display: none; }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; }
 button { background: var(--accent-2); border: 0; border-radius: 7px; color: #0b1020; cursor: pointer; font-weight: 700; padding: 10px 12px; }
+button:disabled { cursor: wait; opacity: .55; }
 button.secondary { background: var(--panel-light); border: 1px solid var(--border); color: var(--text); }
 main { padding: 0 24px 48px; }
 .empty-state { border: 1px dashed var(--border); border-radius: 12px; color: var(--muted); padding: 42px; text-align: center; }
@@ -34,6 +35,8 @@ main { padding: 0 24px 48px; }
 .card span { color: var(--muted); font-size: 12px; text-transform: uppercase; }
 .panel { margin-bottom: 18px; padding: 18px; }
 .panel-heading { align-items: baseline; display: flex; justify-content: space-between; margin-bottom: 14px; }
+.help { color: var(--muted); margin-top: 0; }
+.run-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .chart-grid { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
 canvas { display: block; height: 270px; width: 100%; }
 select { background: var(--panel-light); border: 1px solid var(--border); border-radius: 6px; color: var(--text); margin-bottom: 12px; padding: 8px; width: 100%; }

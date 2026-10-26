@@ -45,15 +45,34 @@
         <button id="copy-command" type="button">Copy command</button>
       </section>
 
+      <section class="panel run-panel">
+        <div class="panel-heading"><h2>Run a local test</h2><span id="run-status">server idle</span></div>
+        <p class="help">These buttons run bounded, localhost-only presets through the Java backend. They do not accept shell commands.</p>
+        <div class="run-actions">
+          <button id="run-quick" type="button">Run quick comparison</button>
+          <button id="run-loss" type="button">Run loss test</button>
+          <button id="run-delay" type="button">Run delay test</button>
+        </div>
+      </section>
+
       <div class="chart-grid">
         <section class="panel"><div class="panel-heading"><h2>Goodput</h2><span>bytes/sec</span></div><canvas id="goodput-chart"></canvas></section>
         <section class="panel"><div class="panel-heading"><h2>Average RTT</h2><span>milliseconds</span></div><canvas id="rtt-chart"></canvas></section>
+        <section class="panel"><div class="panel-heading"><h2>Acknowledgement rate</h2><span>percent</span></div><canvas id="ack-chart"></canvas></section>
+        <section class="panel"><div class="panel-heading"><h2>Retransmission rate</h2><span>percent</span></div><canvas id="retransmission-chart"></canvas></section>
+        <section class="panel"><div class="panel-heading"><h2>Packet loss rate</h2><span>percent</span></div><canvas id="loss-chart"></canvas></section>
       </div>
 
       <section class="panel">
         <div class="panel-heading"><h2>Interval response</h2><span>select an interval file</span></div>
         <select id="interval-select"></select>
         <canvas id="interval-chart"></canvas>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading"><h2>Congestion-window response</h2><span>window changes and retransmissions</span></div>
+        <select id="event-select"></select>
+        <canvas id="event-chart"></canvas>
       </section>
 
       <section class="panel">

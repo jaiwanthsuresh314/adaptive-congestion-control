@@ -25,7 +25,7 @@ Milestones 1–6 are implemented. Milestone 7 evaluation and frontend work remai
 - Congestion-window change events for controller response plots.
 - Windows-compatible application-level UDP impairment emulation for deterministic loss and ACK delay/reordering.
 
-Controlled network experiments and the optional frontend remain future work. Offline CSV analysis is available.
+Controlled network experiments remain future work. A local dashboard is available for reviewing results and launching bounded application-level tests.
 
 ## Technology
 
@@ -163,9 +163,11 @@ The next development steps are:
 
 ## Frontend plan
 
-The first frontend is now isolated under `frontend/` as a dependency-free static dashboard. For file-only mode, start it from the project root with `python -m http.server 8000 --directory frontend` and open `http://localhost:8000/`. For backend integration mode, compile and run `java -cp target/classes edu.adaptivecc.dashboard.DashboardServer`, open the same URL, and use `Load from backend`.
+The first frontend is isolated under `frontend/` as a dependency-free dashboard. For file-only mode, start it from the project root with `python -m http.server 8000 --directory frontend` and open `http://localhost:8000/`. For backend integration mode, compile and run `java -cp target/classes edu.adaptivecc.dashboard.DashboardServer`, open the same URL, and use `Load from backend`.
 
-The dashboard includes `Load demo results` and `Load loss demo` buttons backed by bundled local benchmark outputs. `Load from backend` retrieves the same artifacts through the Java HTTP API. These are demonstration measurements from one local run, not general performance claims. `Clear` resets the view, and `Copy command` copies a reproducible benchmark command.
+The dashboard includes `Load demo results` and `Load loss demo` buttons backed by bundled local benchmark outputs. `Load from backend` retrieves artifacts through the Java HTTP API. It now shows goodput, RTT, acknowledgement rate, retransmission rate, packet-loss rate, interval sending/goodput, and congestion-window response graphs. These are demonstration measurements from local runs, not general performance claims. `Clear` resets the view, and `Copy command` copies a reproducible benchmark command.
+
+When `DashboardServer` is running, the `Run a local test` buttons launch one of three fixed presets: a quick comparison, a deterministic packet-loss test, or a deterministic ACK-delay test. Each preset runs 40 packets at 256 bytes for the fixed, AIMD, and adaptive controllers, then writes results under `frontend/demo-results` and reloads them into the dashboard. The API accepts only these preset names; it does not execute browser-supplied shell commands or expose the server beyond `127.0.0.1`. Only run it on a machine and network under your control.
 
 The frontend data contract is the generated manifest, summary CSV, interval CSV, and event CSV files. The current views cover controller comparison, goodput, RTT, and interval sending-rate/goodput plots. Later additions can include estimated queueing delay, retransmission/loss events, congestion-window overlays, and multi-flow fairness. A later phase may add a read-only Java HTTP or WebSocket service for live metrics.
 
