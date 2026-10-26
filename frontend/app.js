@@ -54,15 +54,16 @@ async function loadBundled(names) {
   render();
 }
 
-async function loadFromBackend() {
+async function loadFromBackend(prefix = '') {
   const response = await fetch('/api/results');
   if (!response.ok) throw new Error(`Backend returned ${response.status}`);
-  const entries = await response.json();
-  resetState();
-  for (const entry of entries) {
+  const entries = (await response.json()).filter(entry => entry.name.startsWith(prefix));
+  const texts = await Promise.all(entries.map(async entry => {
     const artifact = await fetch(`/api/results/${encodeURIComponent(entry.name)}`);
-    if (artifact.ok) ingestArtifact(entry.name, await artifact.text());
-  }
+    return artifact.ok ? [entry.name, await artifact.text()] : null;
+  }));
+  resetState();
+  for (const item of texts) if (item) ingestArtifact(item[0], item[1]);
   render();
 }
 
@@ -97,11 +98,18 @@ function renderSummary() {
 
 function renderIntervalSelector() {
   $('interval-select').innerHTML = [...state.intervals.keys()].map(name => `<option>${name}</option>`).join('');
+  preferAdaptive($('interval-select'));
   $('interval-select').onchange = drawIntervals;
+}
+
+function preferAdaptive(select) {
+  const option = [...select.options].find(item => item.value.includes('adaptive'));
+  if (option) select.value = option.value;
 }
 
 function renderEventSelector() {
   $('event-select').innerHTML = [...state.events.keys()].map(name => `<option>${name}</option>`).join('');
+  preferAdaptive($('event-select'));
   $('event-select').onchange = drawEvents;
 }
 
@@ -110,10 +118,11 @@ function renderArtifacts() {
   $('artifacts').innerHTML = state.artifacts.map(name => `<li>${name}</li>`).join('');
 }
 
-function shortLabel(scenario) {
-  const words = { aimd: 'AIMD', adaptive: 'Adaptive', fixed: 'Fixed', loss: 'Loss', delay: 'Delay' };
+function shortLabel(scenario, dropPreset = false) {
+  const words = { aimd: 'AIMD', adaptive: 'Adaptive', fixed: 'Fixed', loss: 'Loss', delay: 'Delay', quick: 'Quick' };
   const label = String(scenario || '')
     .replace(/^localhost-/, '')
+    .replace(/^live-(quick|loss|delay)-/, dropPreset ? '' : '$1-')
     .replace(/fixed-window-(\d+)/, 'Fixed $1')
     .split('-')
     .map(word => words[word] || word)
@@ -146,27 +155,75 @@ function metricValue(row, field) {
   return number(row[field]);
 }
 
+function barColor(index) { return index % 2 ? '#8ea8ff' : '#62d6c7'; }
+
+function barValueText(field, value) {
+  if (field.includes('rtt')) return value.toFixed(2);
+  if (field.endsWith('_rate')) return value.toFixed(1);
+  return compactNumber(value);
+}
+
 function drawBarChart(canvas, rows, field, formatter) {
   const context = canvas.getContext('2d'); const scale = devicePixelRatio;
-  const width = canvas.clientWidth * scale; const height = 270 * scale;
-  canvas.width = width; canvas.height = height; context.clearRect(0, 0, width, height);
-  if (!rows.length) return;
-  const top = 26 * scale; const bottom = 44 * scale; const plot = height - top - bottom;
-  const max = Math.max(...rows.map(row => metricValue(row, field)), 1); const gap = width / rows.length;
+  const width = canvas.clientWidth * scale;
   const fontSize = 12 * scale; const lineHeight = 15 * scale;
-  context.textAlign = 'center';
-  rows.forEach((row, index) => {
-    const value = metricValue(row, field); const barHeight = (value / max) * plot;
-    const centre = index * gap + gap / 2; const barTop = top + plot - barHeight;
-    context.fillStyle = index % 2 ? '#8ea8ff' : '#62d6c7';
-    context.fillRect(centre - gap * .32, barTop, gap * .64, barHeight);
-    context.font = `600 ${fontSize}px system-ui`; context.fillStyle = '#e6ebf2';
-    const valueText = field.includes('rtt') ? number(value).toFixed(2) : compactNumber(value);
-    context.fillText(valueText, centre, barTop - 6 * scale);
-    context.font = `${fontSize}px system-ui`; context.fillStyle = '#9aa8bb';
-    fitLabel(context, shortLabel(row.scenario), gap * .92).forEach((line, lineIndex) => {
-      context.fillText(line, centre, top + plot + 16 * scale + lineIndex * lineHeight);
+  context.font = `${fontSize}px system-ui`;
+  const presets = new Set(rows.map(row => (String(row.scenario).match(/^live-(quick|loss|delay)-/) || [])[1]));
+  const onePreset = presets.size === 1 && !presets.has(undefined);
+  const labels = rows.map(row => shortLabel(row.scenario, onePreset));
+  const values = rows.map(row => metricValue(row, field));
+  const max = Math.max(...values, 1);
+  const count = Math.max(rows.length, 1);
+  const longest = Math.max(0, ...labels.map(label => context.measureText(label).width));
+  const fits = labels.every(label => fitLabel(context, label, width / count * .92).every(line => !line.endsWith('…')));
+  const angledLeft = Math.max(0, longest * Math.SQRT1_2 - width / count / 2 + 6 * scale);
+  const angledGap = (width - angledLeft) / count;
+  const mode = fits ? 'columns' : angledGap >= lineHeight * 1.2 ? 'angled' : 'rows';
+
+  if (mode === 'rows') {
+    const rowHeight = 20 * scale; const top = 6 * scale;
+    const height = top * 2 + count * rowHeight;
+    canvas.width = width; canvas.height = height; canvas.style.height = `${height / scale}px`;
+    context.clearRect(0, 0, width, height);
+    const labelWidth = Math.min(longest + 10 * scale, width * .45);
+    const valueWidth = 56 * scale; const barSpace = Math.max(width - labelWidth - valueWidth, 1);
+    rows.forEach((row, index) => {
+      const y = top + index * rowHeight; const barWidth = values[index] / max * barSpace;
+      context.font = `${fontSize}px system-ui`; context.fillStyle = '#9aa8bb'; context.textAlign = 'end';
+      context.fillText(fitLabel(context, labels[index], labelWidth - 10 * scale).join(' '), labelWidth - 8 * scale, y + rowHeight * .68);
+      context.fillStyle = barColor(index); context.fillRect(labelWidth, y + 3 * scale, barWidth, rowHeight - 6 * scale);
+      context.font = `600 ${fontSize}px system-ui`; context.fillStyle = '#e6ebf2'; context.textAlign = 'start';
+      context.fillText(barValueText(field, values[index]), labelWidth + barWidth + 6 * scale, y + rowHeight * .68);
     });
+    context.textAlign = 'start';
+    return;
+  }
+
+  const left = mode === 'angled' ? angledLeft : 0;
+  const gap = (width - left) / count;
+  const bottom = mode === 'columns' ? 44 * scale : Math.min(longest * Math.SQRT1_2 + 18 * scale, 120 * scale);
+  const height = 226 * scale + bottom;
+  canvas.width = width; canvas.height = height; canvas.style.height = `${height / scale}px`;
+  context.clearRect(0, 0, width, height);
+  if (!rows.length) return;
+  const top = 26 * scale; const plot = height - top - bottom;
+  rows.forEach((row, index) => {
+    const value = values[index]; const barHeight = (value / max) * plot;
+    const centre = left + index * gap + gap / 2; const barTop = top + plot - barHeight;
+    context.fillStyle = barColor(index);
+    context.fillRect(centre - gap * .32, barTop, gap * .64, barHeight);
+    const valueText = barValueText(field, value);
+    context.font = `600 ${fontSize}px system-ui`; context.fillStyle = '#e6ebf2'; context.textAlign = 'center';
+    if (context.measureText(valueText).width <= gap * .96) context.fillText(valueText, centre, barTop - 6 * scale);
+    context.font = `${fontSize}px system-ui`; context.fillStyle = '#9aa8bb';
+    if (mode === 'columns') {
+      fitLabel(context, labels[index], gap * .92).forEach((line, lineIndex) => {
+        context.fillText(line, centre, top + plot + 16 * scale + lineIndex * lineHeight);
+      });
+    } else {
+      context.save(); context.translate(centre, top + plot + 10 * scale); context.rotate(-Math.PI / 4);
+      context.textAlign = 'end'; context.fillText(labels[index], 0, 4 * scale); context.restore();
+    }
   });
   context.textAlign = 'start';
 }
@@ -222,7 +279,8 @@ async function runPreset(preset) {
       status.textContent = `${preset} test: ${current.status}`;
     } while (current.status === 'queued' || current.status === 'running');
     if (current.status !== 'completed') throw new Error(current.error || 'benchmark failed');
-    await loadFromBackend();
+    status.textContent = `${preset} test: loading results…`;
+    await loadFromBackend(`live-${run.id}-`);
     status.textContent = `${preset} test completed`;
   } catch (error) {
     status.textContent = 'server unavailable';
