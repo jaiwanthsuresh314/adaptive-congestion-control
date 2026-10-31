@@ -46,6 +46,78 @@ mvn test
 If Maven is not available on `PATH`, use the Maven executable directly, for example:
 
 ```powershell
+
+## macOS/Linux Quick Start
+
+The following commands use a Unix-style shell and can be run on macOS or Linux from the project root.
+
+### Prerequisites
+
+- JDK compatible with the project's Java language target.
+- Maven.
+- Python 3 and the dependencies listed in `analysis/requirements.txt` for offline plotting.
+
+### Build and test
+
+Run the test suite:
+
+```bash
+mvn test
+```
+
+### Run the benchmark
+
+After compiling the project, run:
+
+```bash
+java -cp target/classes edu.adaptivecc.experiments.BenchmarkMain
+```
+
+To generate benchmark results with the fixed-rate controller:
+
+```bash
+java -cp target/classes edu.adaptivecc.experiments.BenchmarkMain \
+  --controller=fixed \
+  --packets=100 \
+  --payload=256 \
+  --rate=1000000 \
+  --output=results/fixed-baseline.csv
+```
+
+### Generate offline plots
+
+Install the analysis dependencies:
+
+```bash
+python3 -m pip install -r analysis/requirements.txt
+```
+
+Generate plots from a benchmark summary:
+
+```bash
+python3 analysis/plot_results.py results/benchmark.csv --events results
+```
+
+### Start the frontend
+
+To run the static dashboard:
+
+```bash
+python3 -m http.server 8000 --directory frontend
+```
+
+Open `http://localhost:8000/` in your browser.
+
+For backend integration, compile the project and start the dashboard server:
+
+```bash
+mvn test
+java -cp target/classes edu.adaptivecc.dashboard.DashboardServer
+```
+
+Then open `http://localhost:8000/` and select **Load from backend**.
+
+**Note:** The static frontend and Java dashboard server are separate processes. Start the dashboard server when using backend integration. Follow the existing project documentation for benchmark inputs, generated artifacts, and experimental limitations.
 & "C:\Program Files\apache-maven-3.10.0-bin\apache-maven-3.10.0\bin\mvn.cmd" test
 ```
 
